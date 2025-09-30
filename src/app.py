@@ -3,9 +3,25 @@ from typing import Any
 from datetime import date, timedelta
 import httpx
 from fastmcp import FastMCP
+from fastmcp.server.auth.providers.github import GitHubProvider
 
-# Initialize FastMCP server
-mcp = FastMCP("Oura")
+# Initialize GitHub OAuth provider
+github_client_id = os.environ.get("GITHUB_CLIENT_ID")
+github_client_secret = os.environ.get("GITHUB_CLIENT_SECRET")
+base_url = os.environ.get("BASE_URL")
+
+# Configure authentication if GitHub credentials are provided
+auth = None
+if github_client_id and github_client_secret and base_url:
+    auth = GitHubProvider(
+        client_id=github_client_id,
+        client_secret=github_client_secret,
+        base_url=base_url,
+        required_scopes=["user"]
+    )
+
+# Initialize FastMCP server with optional authentication
+mcp = FastMCP("Oura", auth=auth)
 
 # Configuration
 OURA_API_BASE = "https://api.ouraring.com/v2/usercollection"

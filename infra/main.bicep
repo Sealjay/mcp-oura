@@ -13,6 +13,17 @@ param location string
 @description('Oura API Personal Access Token')
 param ouraApiToken string
 
+@secure()
+@description('GitHub OAuth Client ID')
+param githubClientId string = ''
+
+@secure()
+@description('GitHub OAuth Client Secret')
+param githubClientSecret string = ''
+
+@description('Base URL for OAuth callbacks (e.g., https://your-app.azurewebsites.net)')
+param baseUrl string = ''
+
 var resourceToken = toLower(uniqueString(subscription().id, name, location))
 var tags = { 'azd-env-name': name }
 
@@ -30,6 +41,9 @@ module resources 'resources.bicep' = {
     resourceToken: resourceToken
     tags: tags
     ouraApiToken: ouraApiToken
+    githubClientId: githubClientId
+    githubClientSecret: githubClientSecret
+    baseUrl: baseUrl
   }
 }
 
