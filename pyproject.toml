@@ -1,0 +1,14 @@
+[project]
+name = "mcp-oura"
+version = "0.1.0"
+description = "An Oura MCP server configured for the OpenAI spec"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.111,<0.112",
+    "fastmcp>=2.7.0",
+    "gunicorn>=22.0,<23.0",
+    "httpx>=0.27.0",
+    "mcp[cli]>=1.9.3",
+    "uvicorn>=0.23,<0.24",
+]
