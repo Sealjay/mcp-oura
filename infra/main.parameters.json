@@ -10,9 +10,6 @@
     },
     "ouraApiToken": {
       "value": "${OURA_API_TOKEN}"
-    },
-    "mcpApiKey": {
-      "value": "${MCP_API_KEY}"
     }
   }
 }

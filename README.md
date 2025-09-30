@@ -6,7 +6,6 @@ An Oura MCP (Model Context Protocol) server configured for the OpenAI spec. This
 
 - **FastMCP Server**: Built with FastMCP for easy MCP tool creation
 - **Oura API Integration**: Access daily activity, sleep, readiness, heart rate, and personal info
-- **API Key Security**: Secured with API key authentication
 - **Azure Deployment**: Ready to deploy to Azure App Service using Azure Developer CLI (azd)
 - **Free Tier Compatible**: Configured to use Azure's F1 (free) tier
 
@@ -58,14 +57,13 @@ azd auth login
 
 ### 3. Set environment variables
 
-Before deploying, you need to set your Oura API token and a custom API key for securing your MCP server:
+Before deploying, set your Oura API token:
 
 ```bash
 azd env set OURA_API_TOKEN "your-oura-api-token-here"
-azd env set MCP_API_KEY "your-custom-api-key-here"
 ```
 
-Replace `"your-oura-api-token-here"` with your actual Oura API token, and `"your-custom-api-key-here"` with a strong API key you create (this will be used to authenticate requests to your MCP server).
+Replace `"your-oura-api-token-here"` with your actual Oura API token from the previous step.
 
 ### 4. Deploy to Azure
 
@@ -92,64 +90,33 @@ azd env get-values | grep WEB_URI
 
 ## Using the MCP Server
 
-### Health Check
+The server runs as an MCP streamable-http server at `/mcp` endpoint. You can connect to it using any MCP-compatible client.
 
-Test that your server is running:
+### Example with MCP Client
 
-```bash
-curl https://your-app-url.azurewebsites.net/health
-```
+```python
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
 
-### Calling MCP Tools
-
-All tool requests require the `X-API-Key` header with the API key you configured:
-
-```bash
-curl -X POST https://your-app-url.azurewebsites.net/mcp/tools/call \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: your-custom-api-key-here" \
-  -d '{
-    "name": "get_daily_sleep",
-    "arguments": {
-      "start_date": "2024-01-01",
-      "end_date": "2024-01-07"
-    }
-  }'
-```
-
-### Example Tool Calls
-
-#### Get Daily Activity
-```json
-{
-  "name": "get_daily_activity",
-  "arguments": {
-    "start_date": "2024-01-01",
-    "end_date": "2024-01-07"
-  }
-}
-```
-
-#### Get Sleep Data
-```json
-{
-  "name": "get_daily_sleep",
-  "arguments": {
-    "start_date": "2024-01-01",
-    "end_date": "2024-01-07"
-  }
-}
-```
-
-#### Get Readiness Score
-```json
-{
-  "name": "get_daily_readiness",
-  "arguments": {
-    "start_date": "2024-01-01",
-    "end_date": "2024-01-07"
-  }
-}
+# Connect to your deployed server
+async with stdio_client(StdioServerParameters(
+    command="python",
+    args=["-m", "httpx", "https://your-app.azurewebsites.net/mcp"],
+)) as (read, write):
+    async with ClientSession(read, write) as session:
+        # Initialize the connection
+        await session.initialize()
+        
+        # List available tools
+        tools = await session.list_tools()
+        print(f"Available tools: {tools}")
+        
+        # Call a tool
+        result = await session.call_tool("get_daily_activity", {
+            "start_date": "2024-01-01",
+            "end_date": "2024-01-07"
+        })
+        print(result)
 ```
 
 ## Local Development
@@ -170,7 +137,6 @@ pip install -r src/requirements.txt
 3. Set environment variables:
 ```bash
 export OURA_API_TOKEN="your-oura-api-token"
-export MCP_API_KEY="your-api-key"
 ```
 
 4. Run the server:
@@ -179,17 +145,25 @@ cd src
 python app.py
 ```
 
-The server will start on `http://localhost:8000`
+The server will start on `http://localhost:8000/mcp`
 
 ### Testing Locally
 
-```bash
-curl http://localhost:8000/health
+Use an MCP-compatible client to connect to `http://localhost:8000/mcp` using the streamable-http transport.
 
-curl -X POST http://localhost:8000/mcp/tools/call \
-  -H "Content-Type: application/json" \
-  -H "X-API-Key: your-api-key" \
-  -d '{"name": "get_personal_info", "arguments": {}}'
+## Securing Your Deployment
+
+The basic deployment does not include authentication. For production use, consider:
+
+1. **Azure App Service Authentication**: Enable built-in authentication with Azure AD, Microsoft accounts, or other identity providers
+2. **API Management**: Use Azure API Management to add API key authentication, rate limiting, and monitoring
+3. **Virtual Network**: Deploy to a virtual network and restrict access
+4. **Managed Identity**: Use Azure Managed Identity for secure access to Azure resources
+
+To enable Azure App Service Easy Auth:
+```bash
+az webapp auth update --resource-group <your-rg> --name <your-app-name> \
+  --enabled true --action LoginWithAzureActiveDirectory
 ```
 
 ## Updating Your Deployment
@@ -215,13 +189,6 @@ To change the tier, edit `infra/resources.bicep` line 61:
 - `D1`: Shared tier (discounted developer rate)
 - `B1`: Basic tier (recommended for production)
 
-## Security Best Practices
-
-1. **Never commit secrets**: Keep your `OURA_API_TOKEN` and `MCP_API_KEY` secure
-2. **Rotate API keys regularly**: Update your keys periodically
-3. **Use Azure Key Vault**: For production, consider using Azure Key Vault for secret management
-4. **Enable monitoring**: Use Azure Monitor and Application Insights to track usage
-
 ## Troubleshooting
 
 ### Deployment Issues
@@ -237,20 +204,20 @@ Or through Azure Portal:
 
 ### API Errors
 
-- **401 Unauthorized**: Check your `MCP_API_KEY` is correct
-- **Oura API errors**: Verify your `OURA_API_TOKEN` is valid
+- **Oura API errors**: Verify your `OURA_API_TOKEN` is valid and not expired
 - **No data returned**: Ensure your Oura Ring has synced recently
+- **Connection issues**: Check that your App Service is running and accessible
 
 ## Resources
 
 - [FastMCP Documentation](https://github.com/jlowin/fastmcp)
 - [Oura API Documentation](https://cloud.ouraring.com/docs/)
-- [OpenAI MCP Specification](https://platform.openai.com/docs/mcp)
+- [Model Context Protocol Specification](https://modelcontextprotocol.io/)
 - [Azure Developer CLI Documentation](https://learn.microsoft.com/azure/developer/azure-developer-cli/)
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.
 
 ## Contributing
 

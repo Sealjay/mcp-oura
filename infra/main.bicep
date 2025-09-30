@@ -13,10 +13,6 @@ param location string
 @description('Oura API Personal Access Token')
 param ouraApiToken string
 
-@secure()
-@description('API Key for securing the MCP server')
-param mcpApiKey string
-
 var resourceToken = toLower(uniqueString(subscription().id, name, location))
 var tags = { 'azd-env-name': name }
 
@@ -34,7 +30,6 @@ module resources 'resources.bicep' = {
     resourceToken: resourceToken
     tags: tags
     ouraApiToken: ouraApiToken
-    mcpApiKey: mcpApiKey
   }
 }
 

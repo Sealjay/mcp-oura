@@ -3,8 +3,6 @@ from typing import Any
 from datetime import date, timedelta
 import httpx
 from fastmcp import FastMCP
-from fastapi import Request, HTTPException, status
-from fastapi.security import APIKeyHeader
 
 # Initialize FastMCP server
 mcp = FastMCP("Oura")
@@ -12,35 +10,6 @@ mcp = FastMCP("Oura")
 # Configuration
 OURA_API_BASE = "https://api.ouraring.com/v2/usercollection"
 OURA_API_TOKEN = os.environ.get("OURA_API_TOKEN", "")
-MCP_API_KEY = os.environ.get("MCP_API_KEY", "")
-
-# API Key security
-api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
-
-async def verify_api_key(api_key: str = None) -> bool:
-    """Verify the API key for the MCP server."""
-    if not MCP_API_KEY:
-        # If no API key is configured, allow access (for local development)
-        return True
-    if not api_key:
-        return False
-    return api_key == MCP_API_KEY
-
-# Add API key middleware
-@mcp.app.middleware("http")
-async def authenticate(request: Request, call_next):
-    """Middleware to authenticate requests with API key."""
-    # Skip authentication for health check endpoints
-    if request.url.path in ["/health", "/", "/docs", "/openapi.json"]:
-        return await call_next(request)
-    
-    api_key = request.headers.get("X-API-Key")
-    if not await verify_api_key(api_key):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or missing API key"
-        )
-    return await call_next(request)
 
 async def make_oura_request(endpoint: str, params: dict = None) -> dict[str, Any] | None:
     """Make a request to the Oura API with proper error handling."""
@@ -244,11 +213,6 @@ Email: {data.get('email', 'N/A')}
     
     return info.strip()
 
-# Health check endpoint
-@mcp.app.get("/health")
-async def health():
-    """Health check endpoint."""
-    return {"status": "healthy", "service": "mcp-oura"}
 
 if __name__ == "__main__":
     mcp.run(transport="streamable-http", host="0.0.0.0", port=8000)

@@ -5,9 +5,6 @@ param tags object
 @secure()
 param ouraApiToken string
 
-@secure()
-param mcpApiKey string
-
 resource web 'Microsoft.Web/sites@2022-03-01' = {
   name: 'web-${resourceToken}'
   location: location
@@ -31,7 +28,6 @@ resource web 'Microsoft.Web/sites@2022-03-01' = {
     properties: {
       SCM_DO_BUILD_DURING_DEPLOYMENT: 'true'
       OURA_API_TOKEN: ouraApiToken
-      MCP_API_KEY: mcpApiKey
     }
   }
 
