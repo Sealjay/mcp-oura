@@ -24,18 +24,18 @@ The server provides the following tools for querying Oura data:
 
 ### OpenAI MCP Spec Tools
 
-- `fetch_oura_data`: Fetch specific Oura data by type and date range (follows OpenAI MCP fetch spec)
+- `fetch`: Fetch specific Oura data by type and date range (follows OpenAI MCP fetch spec)
   - Supports data types: `activity`, `sleep`, `readiness`, `heart_rate`, `personal_info`
   - Accepts optional `start_date` and `end_date` parameters in YYYY-MM-DD format
-  - Example: `fetch_oura_data("sleep", "2024-01-01", "2024-01-07")`
+  - Example: `fetch("sleep", "2024-01-01", "2024-01-07")`
 
-- `search_oura_data`: Search through Oura data using natural language queries (follows OpenAI MCP search spec)
+- `search`: Search through Oura data using natural language queries (follows OpenAI MCP search spec)
   - Intelligently determines which data sources to query based on your search query
   - Accepts optional `start_date` and `end_date` parameters in YYYY-MM-DD format
   - Examples:
-    - `search_oura_data("sleep quality last week")`
-    - `search_oura_data("activity and steps yesterday")`
-    - `search_oura_data("readiness score")`
+    - `search("sleep quality last week")`
+    - `search("activity and steps yesterday")`
+    - `search("readiness score")`
 
 ## Prerequisites
 

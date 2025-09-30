@@ -230,7 +230,7 @@ Email: {data.get('email', 'N/A')}
     return info.strip()
 
 @mcp.tool()
-async def fetch_oura_data(data_type: str, start_date: str = None, end_date: str = None) -> str:
+async def fetch(data_type: str, start_date: str = None, end_date: str = None) -> str:
     """Fetch specific Oura data by type and date range.
     
     This tool follows the OpenAI MCP spec for fetch operations, allowing you to retrieve
@@ -261,7 +261,7 @@ async def fetch_oura_data(data_type: str, start_date: str = None, end_date: str 
         return f"Unknown data type: {data_type}. Available types: activity, sleep, readiness, heart_rate, personal_info"
 
 @mcp.tool()
-async def search_oura_data(query: str, start_date: str = None, end_date: str = None) -> str:
+async def search(query: str, start_date: str = None, end_date: str = None) -> str:
     """Search through Oura data using natural language queries.
     
     This tool follows the OpenAI MCP spec for search operations, allowing you to search
