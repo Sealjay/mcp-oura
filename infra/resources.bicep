@@ -5,6 +5,14 @@ param tags object
 @secure()
 param ouraApiToken string
 
+@secure()
+param githubClientId string
+
+@secure()
+param githubClientSecret string
+
+param baseUrl string
+
 resource web 'Microsoft.Web/sites@2022-03-01' = {
   name: 'web-${resourceToken}'
   location: location
@@ -28,6 +36,9 @@ resource web 'Microsoft.Web/sites@2022-03-01' = {
     properties: {
       SCM_DO_BUILD_DURING_DEPLOYMENT: 'true'
       OURA_API_TOKEN: ouraApiToken
+      GITHUB_CLIENT_ID: githubClientId
+      GITHUB_CLIENT_SECRET: githubClientSecret
+      BASE_URL: !empty(baseUrl) ? baseUrl : 'https://${web.properties.defaultHostName}'
     }
   }
 

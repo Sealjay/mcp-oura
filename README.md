@@ -5,6 +5,7 @@ An Oura MCP (Model Context Protocol) server configured for the OpenAI spec. This
 ## Features
 
 - **FastMCP Server**: Built with FastMCP for easy MCP tool creation
+- **GitHub OAuth Authentication**: Secure your server with GitHub OAuth authentication
 - **Oura API Integration**: Access daily activity, sleep, readiness, heart rate, and personal info
 - **Azure Deployment**: Ready to deploy to Azure App Service using Azure Developer CLI (azd)
 - **Free Tier Compatible**: Configured to use Azure's F1 (free) tier
@@ -24,6 +25,7 @@ The server provides the following tools for querying Oura data:
 - [Azure Developer CLI (azd)](https://learn.microsoft.com/azure/developer/azure-developer-cli/install-azd)
 - [Python 3.11+](https://www.python.org/downloads/)
 - [Oura API Personal Access Token](https://cloud.ouraring.com/personal-access-tokens)
+- [GitHub OAuth App](https://github.com/settings/developers) (for authentication)
 - An Azure subscription
 
 ## Getting Your Oura API Token
@@ -33,6 +35,39 @@ The server provides the following tools for querying Oura data:
 3. Click "Create A New Personal Access Token"
 4. Give it a name and click "Create"
 5. Copy the token - you'll need it for deployment
+
+## Setting Up GitHub OAuth Authentication
+
+This server uses GitHub OAuth to secure access to the FastMCP server. Follow these steps to create a GitHub OAuth App:
+
+### 1. Create a GitHub OAuth App
+
+1. Go to [GitHub Developer Settings](https://github.com/settings/developers)
+2. Click "OAuth Apps" in the left sidebar
+3. Click "New OAuth App"
+4. Fill in the application details:
+   - **Application name**: `mcp-oura` (or your preferred name)
+   - **Homepage URL**: Your Azure App Service URL (e.g., `https://web-abc123.azurewebsites.net`)
+   - **Authorization callback URL**: Your Azure App Service URL + `/auth/callback` (e.g., `https://web-abc123.azurewebsites.net/auth/callback`)
+5. Click "Register application"
+6. On the app details page:
+   - Copy the **Client ID** - you'll need this for deployment
+   - Click "Generate a new client secret"
+   - Copy the **Client Secret** - you'll need this immediately (it won't be shown again)
+
+> **Note**: If you don't know your Azure App Service URL yet, you can update the GitHub OAuth App settings after your first deployment. The URL will be shown after running `azd up`.
+
+### 2. Understanding OAuth Configuration
+
+The GitHub OAuth integration provides:
+- **Secure authentication**: Only users who authenticate via GitHub can access the MCP server
+- **User identification**: Access to GitHub user information (username, email, etc.)
+- **Minimal configuration**: Just set three environment variables
+
+The server will automatically configure the OAuth endpoints at:
+- Authorization: `https://your-app.azurewebsites.net/auth/authorize`
+- Token: `https://your-app.azurewebsites.net/auth/token`
+- Callback: `https://your-app.azurewebsites.net/auth/callback`
 
 ## Deployment to Azure
 
@@ -57,13 +92,23 @@ azd auth login
 
 ### 3. Set environment variables
 
-Before deploying, set your Oura API token:
+Before deploying, set your Oura API token and GitHub OAuth credentials:
 
 ```bash
 azd env set OURA_API_TOKEN "your-oura-api-token-here"
+azd env set GITHUB_CLIENT_ID "your-github-client-id"
+azd env set GITHUB_CLIENT_SECRET "your-github-client-secret"
 ```
 
-Replace `"your-oura-api-token-here"` with your actual Oura API token from the previous step.
+Replace the placeholder values with:
+- `your-oura-api-token-here`: Your actual Oura API token from the previous step
+- `your-github-client-id`: The Client ID from your GitHub OAuth App
+- `your-github-client-secret`: The Client Secret from your GitHub OAuth App
+
+> **Note**: The `BASE_URL` will be automatically set to your Azure App Service URL. If you need to override it, you can set it manually:
+> ```bash
+> azd env set BASE_URL "https://your-custom-domain.com"
+> ```
 
 ### 4. Deploy to Azure
 
@@ -137,7 +182,12 @@ pip install -r src/requirements.txt
 3. Set environment variables:
 ```bash
 export OURA_API_TOKEN="your-oura-api-token"
+export GITHUB_CLIENT_ID="your-github-client-id"
+export GITHUB_CLIENT_SECRET="your-github-client-secret"
+export BASE_URL="http://localhost:8000"
 ```
+
+> **Note**: For local development without authentication, you can omit the GitHub OAuth variables. The server will run without authentication if they are not set.
 
 4. Run the server:
 ```bash
@@ -153,18 +203,26 @@ Use an MCP-compatible client to connect to `http://localhost:8000/mcp` using the
 
 ## Securing Your Deployment
 
-The basic deployment does not include authentication. For production use, consider:
+This deployment includes **GitHub OAuth authentication** by default when you configure the GitHub OAuth environment variables. This provides secure access control to your MCP server.
 
-1. **Azure App Service Authentication**: Enable built-in authentication with Azure AD, Microsoft accounts, or other identity providers
-2. **API Management**: Use Azure API Management to add API key authentication, rate limiting, and monitoring
-3. **Virtual Network**: Deploy to a virtual network and restrict access
-4. **Managed Identity**: Use Azure Managed Identity for secure access to Azure resources
+### Authentication Setup
 
-To enable Azure App Service Easy Auth:
-```bash
-az webapp auth update --resource-group <your-rg> --name <your-app-name> \
-  --enabled true --action LoginWithAzureActiveDirectory
-```
+When you deploy with GitHub OAuth credentials (as described in the setup section), the server will:
+- Require GitHub authentication for all MCP tool access
+- Validate OAuth tokens via GitHub's API
+- Provide user information in the authentication context
+
+### Additional Security Options
+
+For additional security layers, you can also consider:
+
+1. **Virtual Network**: Deploy to a virtual network and restrict access
+2. **Managed Identity**: Use Azure Managed Identity for secure access to Azure resources
+3. **API Management**: Use Azure API Management for additional rate limiting and monitoring
+
+### Running Without Authentication (Development Only)
+
+For local development or testing, you can run the server without authentication by not setting the GitHub OAuth environment variables. **This is not recommended for production use.**
 
 ## Updating Your Deployment
 
@@ -208,12 +266,20 @@ Or through Azure Portal:
 - **No data returned**: Ensure your Oura Ring has synced recently
 - **Connection issues**: Check that your App Service is running and accessible
 
+### Authentication Errors
+
+- **GitHub OAuth errors**: Verify your GitHub OAuth App credentials are correct
+- **Callback URL mismatch**: Ensure the Authorization callback URL in your GitHub OAuth App matches your deployed URL + `/auth/callback`
+- **Invalid token**: GitHub OAuth tokens are verified in real-time. Ensure you're using a valid token from the OAuth flow
+
 ## Resources
 
 - [FastMCP Documentation](https://github.com/jlowin/fastmcp)
+- [FastMCP GitHub OAuth Integration](https://gofastmcp.com/integrations/github)
 - [Oura API Documentation](https://cloud.ouraring.com/docs/)
 - [Model Context Protocol Specification](https://modelcontextprotocol.io/)
 - [Azure Developer CLI Documentation](https://learn.microsoft.com/azure/developer/azure-developer-cli/)
+- [GitHub OAuth Apps Documentation](https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/creating-an-oauth-app)
 
 ## License
 
