@@ -229,6 +229,105 @@ Email: {data.get('email', 'N/A')}
     
     return info.strip()
 
+@mcp.tool()
+async def fetch_oura_data(data_type: str, start_date: str = None, end_date: str = None) -> str:
+    """Fetch specific Oura data by type and date range.
+    
+    This tool follows the OpenAI MCP spec for fetch operations, allowing you to retrieve
+    specific data from Oura by data type and date range.
+    
+    Args:
+        data_type: Type of data to fetch. Options: 'activity', 'sleep', 'readiness', 'heart_rate', 'personal_info'
+        start_date: Start date in YYYY-MM-DD format (defaults to 7 days ago for daily data)
+        end_date: End date in YYYY-MM-DD format (defaults to today for daily data)
+    
+    Returns:
+        Formatted string with the requested Oura data
+    """
+    data_type = data_type.lower().strip()
+    
+    # Map user-friendly names to internal function calls
+    if data_type in ['activity', 'daily_activity']:
+        return await get_daily_activity(start_date, end_date)
+    elif data_type in ['sleep', 'daily_sleep']:
+        return await get_daily_sleep(start_date, end_date)
+    elif data_type in ['readiness', 'daily_readiness']:
+        return await get_daily_readiness(start_date, end_date)
+    elif data_type in ['heart_rate', 'heartrate', 'hr']:
+        return await get_heart_rate(start_date, end_date)
+    elif data_type in ['personal_info', 'profile', 'user']:
+        return await get_personal_info()
+    else:
+        return f"Unknown data type: {data_type}. Available types: activity, sleep, readiness, heart_rate, personal_info"
+
+@mcp.tool()
+async def search_oura_data(query: str, start_date: str = None, end_date: str = None) -> str:
+    """Search through Oura data using natural language queries.
+    
+    This tool follows the OpenAI MCP spec for search operations, allowing you to search
+    through various Oura data sources using natural language. The tool intelligently
+    determines which data sources to query based on your search query.
+    
+    Args:
+        query: Natural language search query (e.g., "sleep quality last week", "activity yesterday", "readiness score")
+        start_date: Optional start date in YYYY-MM-DD format (defaults to 7 days ago)
+        end_date: Optional end date in YYYY-MM-DD format (defaults to today)
+    
+    Returns:
+        Formatted string with search results from relevant Oura data sources
+    """
+    query = query.lower()
+    results = []
+    
+    # Set default date range if not provided
+    if not start_date:
+        start_date = format_date(7)
+    if not end_date:
+        end_date = format_date(0)
+    
+    # Determine which data sources to query based on keywords
+    search_sleep = any(keyword in query for keyword in ['sleep', 'rest', 'rem', 'deep', 'awake', 'efficiency'])
+    search_activity = any(keyword in query for keyword in ['activity', 'steps', 'calories', 'exercise', 'walk', 'active', 'sedentary'])
+    search_readiness = any(keyword in query for keyword in ['readiness', 'ready', 'recovery', 'temperature', 'hrv', 'balance'])
+    search_heart_rate = any(keyword in query for keyword in ['heart rate', 'hr', 'bpm', 'pulse', 'heartrate'])
+    search_personal = any(keyword in query for keyword in ['profile', 'personal', 'info', 'age', 'weight', 'height'])
+    
+    # If no specific keywords found, search all daily data sources
+    if not any([search_sleep, search_activity, search_readiness, search_heart_rate, search_personal]):
+        search_sleep = search_activity = search_readiness = True
+    
+    # Fetch relevant data sources
+    if search_activity:
+        activity_data = await get_daily_activity(start_date, end_date)
+        if "Unable to fetch" not in activity_data and "No activity data" not in activity_data:
+            results.append(f"=== ACTIVITY DATA ===\n{activity_data}")
+    
+    if search_sleep:
+        sleep_data = await get_daily_sleep(start_date, end_date)
+        if "Unable to fetch" not in sleep_data and "No sleep data" not in sleep_data:
+            results.append(f"=== SLEEP DATA ===\n{sleep_data}")
+    
+    if search_readiness:
+        readiness_data = await get_daily_readiness(start_date, end_date)
+        if "Unable to fetch" not in readiness_data and "No readiness data" not in readiness_data:
+            results.append(f"=== READINESS DATA ===\n{readiness_data}")
+    
+    if search_heart_rate:
+        # For heart rate, use datetime parameters if dates are provided
+        hr_data = await get_heart_rate(start_date, end_date)
+        if "Unable to fetch" not in hr_data and "No heart rate data" not in hr_data:
+            results.append(f"=== HEART RATE DATA ===\n{hr_data}")
+    
+    if search_personal:
+        personal_data = await get_personal_info()
+        if "Unable to fetch" not in personal_data:
+            results.append(f"=== PERSONAL INFO ===\n{personal_data}")
+    
+    if not results:
+        return f"No data found matching query: '{query}' for date range {start_date} to {end_date}"
+    
+    return f"Search results for: '{query}'\nDate range: {start_date} to {end_date}\n\n" + "\n\n".join(results)
+
 
 if __name__ == "__main__":
     mcp.run(transport="streamable-http", host="0.0.0.0", port=8000)
