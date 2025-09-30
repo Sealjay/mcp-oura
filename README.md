@@ -14,11 +14,28 @@ An Oura MCP (Model Context Protocol) server configured for the OpenAI spec. This
 
 The server provides the following tools for querying Oura data:
 
+### Basic Data Retrieval Tools
+
 - `get_daily_activity`: Retrieve daily activity metrics (steps, calories, activity time)
 - `get_daily_sleep`: Retrieve sleep data (duration, sleep stages, efficiency)
 - `get_daily_readiness`: Retrieve readiness scores and contributing factors
 - `get_heart_rate`: Retrieve heart rate measurements
 - `get_personal_info`: Retrieve user profile information
+
+### OpenAI MCP Spec Tools
+
+- `fetch`: Fetch specific Oura data by type and date range (follows OpenAI MCP fetch spec)
+  - Supports data types: `activity`, `sleep`, `readiness`, `heart_rate`, `personal_info`
+  - Accepts optional `start_date` and `end_date` parameters in YYYY-MM-DD format
+  - Example: `fetch("sleep", "2024-01-01", "2024-01-07")`
+
+- `search`: Search through Oura data using natural language queries (follows OpenAI MCP search spec)
+  - Intelligently determines which data sources to query based on your search query
+  - Accepts optional `start_date` and `end_date` parameters in YYYY-MM-DD format
+  - Examples:
+    - `search("sleep quality last week")`
+    - `search("activity and steps yesterday")`
+    - `search("readiness score")`
 
 ## Prerequisites
 
