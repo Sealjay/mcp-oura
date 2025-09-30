@@ -1,0 +1,75 @@
+param location string
+param resourceToken string
+param tags object
+
+@secure()
+param ouraApiToken string
+
+@secure()
+param mcpApiKey string
+
+resource web 'Microsoft.Web/sites@2022-03-01' = {
+  name: 'web-${resourceToken}'
+  location: location
+  tags: union(tags, { 'azd-service-name': 'web' })
+  kind: 'app,linux'
+  properties: {
+    serverFarmId: appServicePlan.id
+    siteConfig: {
+      linuxFxVersion: 'PYTHON|3.11'
+      ftpsState: 'Disabled'
+      appCommandLine: 'python app.py'
+    }
+    httpsOnly: true
+  }
+  identity: {
+    type: 'SystemAssigned'
+  }
+
+  resource appSettings 'config' = {
+    name: 'appsettings'
+    properties: {
+      SCM_DO_BUILD_DURING_DEPLOYMENT: 'true'
+      OURA_API_TOKEN: ouraApiToken
+      MCP_API_KEY: mcpApiKey
+    }
+  }
+
+  resource logs 'config' = {
+    name: 'logs'
+    properties: {
+      applicationLogs: {
+        fileSystem: {
+          level: 'Verbose'
+        }
+      }
+      detailedErrorMessages: {
+        enabled: true
+      }
+      failedRequestsTracing: {
+        enabled: true
+      }
+      httpLogs: {
+        fileSystem: {
+          enabled: true
+          retentionInDays: 1
+          retentionInMb: 35
+        }
+      }
+    }
+  }
+}
+
+resource appServicePlan 'Microsoft.Web/serverfarms@2022-03-01' = {
+  name: 'app-${resourceToken}'
+  location: location
+  sku: {
+    name: 'F1'
+  }
+  kind: 'linux'
+  properties: {
+    reserved: true
+  }
+}
+
+output WEB_URI string = 'https://${web.properties.defaultHostName}'
