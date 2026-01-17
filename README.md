@@ -1,5 +1,15 @@
 # mcp-oura
 
+> **⚠️ ARCHIVED PROJECT - NO LONGER MAINTAINED ⚠️**
+>
+> This project is archived and no longer supported. No further development or maintenance will take place.
+>
+> **Why?** The maintainer no longer uses Oura, and more importantly, Claude and other LLM services now support native Apple Health integration, making dedicated Oura MCP servers largely unnecessary for most use cases.
+>
+> Feel free to fork this repository if you'd like to continue development for your own needs.
+
+---
+
 An Oura MCP (Model Context Protocol) server configured for the OpenAI spec. This server provides access to Oura Ring health data through a FastMCP API, deployable to Azure App Service.
 
 ## Features
@@ -304,4 +314,4 @@ This project is licensed under the MIT License.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+**This project is archived and no longer accepting contributions.** Feel free to fork the repository if you'd like to continue development.
