@@ -1,7 +1,7 @@
 [project]
 name = "mcp-oura"
 version = "0.1.0"
-description = "An Oura MCP server configured for the OpenAI spec"
+description = "[ARCHIVED] An Oura MCP server configured for the OpenAI spec - no longer maintained"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
